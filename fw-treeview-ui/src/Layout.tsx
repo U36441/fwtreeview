@@ -14,10 +14,8 @@ export default function Layout({ children }: Props) {
       const file = e.target.files[0];
       setSelectedFile(file);
       setProgress(0);
-      // Auto-process the file with progress simulation
       console.log('Processing tree for:', file.name);
       
-      // Simulate progress
       let currentProgress = 0;
       const interval = setInterval(() => {
         currentProgress += Math.random() * 30;
@@ -28,13 +26,11 @@ export default function Layout({ children }: Props) {
           clearInterval(interval);
         }
       }, 300);
-      // Add tree generation logic here
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
       <header className="flex items-center justify-between bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 text-white px-8 py-4 shadow-lg">
         <div className="flex items-center gap-6">
           <button 
@@ -47,14 +43,11 @@ export default function Layout({ children }: Props) {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside className={`${
           sidebarOpen ? 'w-72' : 'w-0'
         } bg-gradient-to-b from-gray-100 to-blue-50 border-r border-gray-300 overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0`}>
           <div className="p-6 space-y-6">
-            {/* File Upload Section */}
             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Upload File
@@ -85,7 +78,6 @@ export default function Layout({ children }: Props) {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-white p-8">
           <div className="max-w-7xl mx-auto">
             {children}
