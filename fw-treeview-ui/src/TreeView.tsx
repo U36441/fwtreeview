@@ -13,24 +13,45 @@ import type { NodeTypes } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { layoutElementsHorizontal } from './dagreLayout';
 
-const CustomNode: React.FC<{ data: { label: string; canExpand: boolean; expanded: boolean; isRoot?: boolean; toggleNode?: () => void } }> = ({ data }) => (
-  <div
-    onClick={() => data.toggleNode && data.toggleNode()}
-    className={
-      `flex flex-col items-center p-2 rounded-lg shadow-sm min-w-[100px] cursor-pointer border ` +
-      (data.isRoot ? 'border-pink-400 bg-white' : 'border-transparent bg-white')
+const CustomNode: React.FC<{
+  data: {
+    label: string;
+    canExpand: boolean;
+    expanded: boolean;
+    isRoot?: boolean;
+    toggleNode?: () => void;
+  };
+}> = ({ data }) => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (data.canExpand && data.toggleNode) {
+      data.toggleNode();
     }
-  >
-    <Handle type="target" position={Position.Left} id="left" />
-    <div className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
-      {data.label}
-      {data.canExpand && (
-        <span className="ml-2 text-sm text-blue-500">{data.expanded ? '▼' : '▶'}</span>
-      )}
+  };
+
+  return (
+    <div
+      onClick={handleToggle}
+      className={
+        `flex flex-col items-center p-2 rounded-lg shadow-sm min-w-[100px] border cursor-pointer ` +
+        (data.isRoot ? 'border-pink-400 bg-white' : 'border-gray-200 bg-white')
+      }
+    >
+      <Handle type="target" position={Position.Left} id="left" />
+
+      <div className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+        <span>{data.label}</span>
+        {data.canExpand && (
+          <span className="text-blue-500">
+            {data.expanded ? '▼' : '▶'}
+          </span>
+        )}
+      </div>
+
+      <Handle type="source" position={Position.Right} id="right" />
     </div>
-    <Handle type="source" position={Position.Right} id="right" />
-  </div>
-);
+  );
+};
 
 interface TreeViewProps {
   data: any;
@@ -54,31 +75,37 @@ function buildTree(
   }
 
   const id = path;
-  // detect common node structures
+
   const isObject = typeof data === 'object' && data !== null;
-  const isLabelNode = isObject && typeof (data as any).label === 'string' && Array.isArray((data as any).children);
+  const isLabelNode =
+    isObject &&
+    typeof (data as any).label === 'string' &&
+    Array.isArray((data as any).children);
 
   const hasChildren = isLabelNode
     ? ((data as any).children as any[]).length > 0
     : isObject
-    ? (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0)
+    ? Array.isArray(data)
+      ? data.length > 0
+      : Object.keys(data).length > 0
     : false;
 
   let label: string = name;
+
   if (isLabelNode) {
     label = (data as any).label;
   } else if (!isObject) {
-    // primitive value
     label = `${name}: ${String(data)}`;
   } else {
-    // object but not label-node: use the key name
     label = name;
   }
 
-  // Vertical layout with indentation (smaller spacing)
   const spacingX = 140;
   const spacingY = 70;
-  const expanded = expandedMap[id] ?? true;
+
+  const expanded = expandedMap.hasOwnProperty(id)
+    ? expandedMap[id]
+    : true;
 
   let x = depth * spacingX;
   let y = siblingOffset;
@@ -86,10 +113,16 @@ function buildTree(
   if (parentExpanded) {
     nodes.push({
       id,
-      data: { label, canExpand: hasChildren, expanded, isRoot: depth === 0 },
+      data: {
+        label,
+        canExpand: hasChildren,
+        expanded,
+        isRoot: depth === 0,
+      },
       position: { x, y },
       type: 'custom',
     });
+
     if (parentId) {
       edges.push({
         id: `e-${parentId}-${id}`,
@@ -109,25 +142,72 @@ function buildTree(
     if (isLabelNode) {
       const children = (data as any).children as any[];
       let childOffset = y;
+
       children.forEach((child, i) => {
         const childPath = `${path}.children[${i}]`;
-        const childName = (child && typeof child === 'object' && child.label) ? child.label : String(i);
-        buildTree(child, childName, id, nodes, edges, childPath, depth + 1, i, expandedMap, true, childOffset);
+        const childName =
+          child && typeof child === 'object' && child.label
+            ? child.label
+            : String(i);
+
+        buildTree(
+          child,
+          childName,
+          id,
+          nodes,
+          edges,
+          childPath,
+          depth + 1,
+          i,
+          expandedMap,
+          true,
+          childOffset
+        );
+
         childOffset += spacingY;
       });
     } else if (Array.isArray(data)) {
       let childOffset = y;
+
       data.forEach((child, i) => {
         const childPath = `${path}[${i}]`;
-        buildTree(child, String(i), id, nodes, edges, childPath, depth + 1, i, expandedMap, true, childOffset);
+
+        buildTree(
+          child,
+          String(i),
+          id,
+          nodes,
+          edges,
+          childPath,
+          depth + 1,
+          i,
+          expandedMap,
+          true,
+          childOffset
+        );
+
         childOffset += spacingY;
       });
     } else {
-      // object map
       let childOffset = y;
+
       Object.entries(data).forEach(([key, value], i) => {
         const childPath = `${path}.${key}`;
-        buildTree(value, key, id, nodes, edges, childPath, depth + 1, i, expandedMap, true, childOffset);
+
+        buildTree(
+          value,
+          key,
+          id,
+          nodes,
+          edges,
+          childPath,
+          depth + 1,
+          i,
+          expandedMap,
+          true,
+          childOffset
+        );
+
         childOffset += spacingY;
       });
     }
@@ -141,41 +221,47 @@ export default function TreeView({ data }: TreeViewProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
-  const handleNodeClick = useCallback((event, node) => {
-    if (node.data.canExpand) {
-      setExpandedMap((prev) => ({ ...prev, [node.id]: !(prev[node.id] ?? true) }));
-    }
-  }, []);
-
   useEffect(() => {
     if (!data || (typeof data !== 'object' && !Array.isArray(data))) {
       setNodes([]);
       setEdges([]);
       return;
     }
-    const { nodes: built, edges: builtE } = buildTree(data, 'Parent', null, [], [], 'root', 0, 0, expandedMap, true, 0);
+
+    const { nodes: built, edges: builtE } = buildTree(
+      data,
+      'Parent',
+      null,
+      [],
+      [],
+      'root',
+      0,
+      0,
+      expandedMap,
+      true,
+      0
+    );
+
+    if (built.length === 0) {
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
+
     try {
-      if (built.length === 0) {
-        setNodes([]);
-        setEdges([]);
-        return;
-      }
-      const { nodes: laidOutNodes, edges: laidOutEdges } = layoutElementsHorizontal(built, builtE);
+      const { nodes: laidOutNodes, edges: laidOutEdges } =
+        layoutElementsHorizontal(built, builtE);
+
       setNodes(laidOutNodes);
       setEdges(laidOutEdges);
-      // debug
-      // console.log('laid out', laidOutNodes.length, laidOutEdges.length);
     } catch (err) {
-      // fallback: set built without layout
-      // eslint-disable-next-line no-console
-      console.error('layout error', err);
       setNodes(built);
       setEdges(builtE);
     }
   }, [data, expandedMap, setNodes, setEdges]);
 
   const nodeTypes: NodeTypes = {
-    custom: CustomNode
+    custom: CustomNode,
   };
 
   if (nodes.length === 0) {
@@ -186,13 +272,16 @@ export default function TreeView({ data }: TreeViewProps) {
     );
   }
 
-  // attach toggle function to each node's data so clicking node toggles expansion
   const renderNodes = nodes.map((n) => ({
     ...n,
     data: {
       ...n.data,
-      toggleNode: () => setExpandedMap((prev) => ({ ...prev, [n.id]: !(prev[n.id] ?? true) })),
-      expanded: !!expandedMap[n.id],
+      toggleNode: () =>
+        setExpandedMap((prev) => ({
+          ...prev,
+          [n.id]: !(prev[n.id] ?? true),
+        })),
+      expanded: expandedMap[n.id] ?? true,
     },
   }));
 

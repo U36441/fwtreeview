@@ -7,7 +7,7 @@ interface Props {
 }
     
 export default function Layout({ children }: Props) {
-  const { themeClass, setTheme } = useTheme();
+  const { themeClass, setTheme, background } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -47,7 +47,19 @@ export default function Layout({ children }: Props) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div
+      className="flex flex-col h-screen"
+      style={
+        background
+          ? {
+              backgroundImage: `url(${background})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : undefined
+      }
+    >
       <header className={`flex items-center justify-between bg-gradient-to-r ${themeClass} text-white px-8 py-4 shadow-lg`}>
         <div className="flex items-center gap-6">
           <button 
@@ -115,7 +127,7 @@ export default function Layout({ children }: Props) {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-white p-8">
+        <main className="flex-1 overflow-y-auto bg-transparent p-8">
           <div className="max-w-7xl mx-auto h-full">
             {jsonData ? <TreeView data={jsonData} /> : children}
           </div>
