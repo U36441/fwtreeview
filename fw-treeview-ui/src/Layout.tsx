@@ -19,7 +19,6 @@ export default function Layout({ children }: Props) {
       const file = e.target.files[0];
       setSelectedFile(file);
       setProgress(0);
-      // read and parse json
       const reader = new FileReader();
       reader.onload = (e) => {
         try {

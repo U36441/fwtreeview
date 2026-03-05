@@ -20,6 +20,7 @@ const CustomNode: React.FC<{
     expanded: boolean;
     isRoot?: boolean;
     toggleNode?: () => void;
+    meta?: any;
   };
 }> = ({ data }) => {
   const handleToggle = (e: React.MouseEvent) => {
@@ -47,6 +48,17 @@ const CustomNode: React.FC<{
           </span>
         )}
       </div>
+
+      {data.meta && typeof data.meta === 'object' && (
+        <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+          {Object.entries(data.meta).filter(([k]) => k !== 'label').map(([k, v]) => (
+            <div key={k} className="capitalize">
+              <span className="font-medium text-gray-700">{k}:</span>{' '}
+              <span className="text-gray-600">{String(v)}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Handle type="source" position={Position.Right} id="right" />
     </div>
@@ -82,13 +94,24 @@ function buildTree(
     typeof (data as any).label === 'string' &&
     Array.isArray((data as any).children);
 
-  const hasChildren = isLabelNode
-    ? ((data as any).children as any[]).length > 0
-    : isObject
-    ? Array.isArray(data)
-      ? data.length > 0
-      : Object.keys(data).length > 0
-    : false;
+  let hasChildren: boolean;
+  if (isLabelNode) {
+    hasChildren = ((data as any).children as any[]).length > 0;
+  } else if (isObject) {
+    if (Object.prototype.hasOwnProperty.call(data, 'children') && Array.isArray((data as any).children)) {
+      hasChildren = ((data as any).children as any[]).length > 0;
+    } else if (Array.isArray(data)) {
+      hasChildren = data.length > 0;
+    } else {
+      if (Object.prototype.hasOwnProperty.call(data, 'label')) {
+        hasChildren = false;
+      } else {
+        hasChildren = Object.keys(data).length > 0;
+      }
+    }
+  } else {
+    hasChildren = false;
+  }
 
   let label: string = name;
 
@@ -98,6 +121,21 @@ function buildTree(
     label = `${name}: ${String(data)}`;
   } else {
     label = name;
+  }
+
+  
+  let metaData: any = undefined;
+  if (isObject) {
+    try {
+      metaData = { ...(data as object as any) };
+      if (metaData && Object.prototype.hasOwnProperty.call(metaData, 'children')) {
+        delete metaData.children;
+      }
+    } catch (e) {
+      metaData = undefined;
+    }
+  } else {
+    metaData = data;
   }
 
   const spacingX = 140;
@@ -118,6 +156,7 @@ function buildTree(
         canExpand: hasChildren,
         expanded,
         isRoot: depth === 0,
+        meta: metaData,
       },
       position: { x, y },
       type: 'custom',

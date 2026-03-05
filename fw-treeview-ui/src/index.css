@@ -1,11 +1,9 @@
 @import "tailwindcss";
 
-/* Hide React Flow attribution/logo watermark */
 .react-flow__attribution {
 	display: none !important;
 }
 
-/* Some versions render attribution as a link or nested elements */
 .react-flow__attribution a,
 .react-flow__attribution * {
 	display: none !important;
